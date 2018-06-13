@@ -1,0 +1,268 @@
+function plot_patterns()
+
+    load parameters.mat
+    
+    format long;
+    
+    BLACK = [0 0 0];
+    BLUE = [0 0 1];
+    BLUE_DARK = [0 0 0.5];
+    BLUE_MEDIUM = [0 0 192]/255;
+    BLUE_LIGHT = [143 172 255]/255;
+    BLUE_SKY = [0 204 255]/255;
+    BROWN = [153 102 51]/255;
+    BROWN_DG = [91 45 10]/255;
+    BROWN_CA3 = [165 131 107]/255;
+    GRAY = [0.5 0.5 0.5];
+    GRAY_DARK = [0.25 0.25 0.25];
+    GRAY_MEDIUM = [0.375 0.375 0.375];
+    GRAY_LIGHT = [0.75 0.75 0.75];
+    GRAY_ULTRALIGHT = [0.90 0.90 0.90];
+    GREEN = [0 0.5 0];
+    GREEN_MEDIUM = [0 0.75 0];
+    GREEN_BRIGHT = [0 1 0];
+    GREEN_EC = [106 149 49]/255;
+    GREEN_MEC = [122 187 51]/255;
+    GREEN_LEC = [90 111 47]/255;
+    ORANGE = [228 108 10]/255;
+    ORANGE_LIGHT = [247 156 21]/255;
+    ORANGE_CA1 = [217 104 13]/255;
+    PURPLE = [0.5 0 0.5];
+    PURPLE_LIGHT = [178 128 178]/255;
+    RED = [1 0 0];
+    RED_LIGHT = [255 178 178]/255;
+    TEAL = [0 255 192]/255;
+    WHITE = [1 1 1];
+    YELLOW = [1 1 0];
+    YELLOW_CA2 = [1 1 0];
+    YELLOW_SUB = [255 192 0]/255;
+    
+    displayFontSize = 5;
+    
+    shadingLineWidths = 0.5;
+    
+    patternsColormap = [  WHITE;      ... % 0: 
+                          ORANGE;     ... % 1: 
+                          TEAL;       ... % 2: 
+                          BROWN;      ... % 3: 
+                          GRAY];      ... % 4: 
+    
+              
+    vStart = -2.5;
+    vStartSummary = vStart - 4.5;
+
+    hTabShift = 0;
+
+    
+    newplot
+    clf('reset'); cla('reset');
+    figure(1);
+    
+    set(gcf, 'color', 'w');
+
+    set(gcf, 'PaperUnits', 'inches');
+    set(gcf, 'PaperSize', [13 11]);
+    set(gcf, 'PaperPositionMode', 'manual');
+    set(gcf, 'PaperPosition', [0 0 13 11]);
+ 
+    set(gca, 'Position', get(gca, 'OuterPosition') - get(gca, 'TightInset') * [-1 0 1 0; 0 -1 0 1; 0 0 1 0; 0 0 0 1]/3);
+
+    hStart = nAllCells+11;
+    hLineEnd = 7.0+4.25;
+
+    vStart = -2.5;
+    vStartSummary = vStart - 4.5;
+
+    hTabShift = 0;
+
+    N = nPatterns+1;
+    
+    %% plot matrix %%
+
+    colormap(patternsColormap(1:5,:));
+    
+    nPatternCounts = zeros(nAllCells+1, nPatterns+1);
+
+    nPatternCounts(1:nAllCells, 1:nPatterns) = patternCounts - 48; % unknown as to why the kluge of 48 is needed
+    
+    
+    pcolor(nPatternCounts)
+    
+    axis ij
+    axis equal
+    axis off 
+
+    axis([(vStart-30) (N+1) (-5+hTabShift) hStart+1])
+
+    hold on
+
+    vTab = vStart + 3.0;
+    
+    for j = 1:nPatterns
+        
+        text(j+0.5, vTab, patternLabels{j}, 'HorizontalAlignment', 'left', 'Rotation', 90, 'FontSize', displayFontSize, 'color', BLACK);
+    
+    end
+    
+    nDGcells = 18;
+    nCA3cells = 25;
+    nCA2cells = 5;
+    nCA1cells = 40;
+    nSUBcells = 3;
+    nECcells = 31;
+    
+    %%%% thick horizontal lines on cell class axis
+    line_width = 1;
+    
+    DGline = nDGcells + 1; %length(DGcells) + 1;
+    CA3line = DGline + nCA3cells; %length(CA3cells) + 1;
+    CA2line = CA3line + nCA2cells; %length(CA2cells) + 1;
+    CA1line = CA2line + nCA1cells; %length(CA1cells);
+    SUBline = CA1line + nSUBcells; %length(SUBcells);
+    
+%     line([0,0], [1, nPatterns], 'linewidth', line_width, 'color', [0 0 0])
+    line([-10, nPatterns+vStart+3.5], [DGline,  DGline],  'linewidth', line_width, 'color', [0 0 0])
+    line([-10, nPatterns+vStart+3.5], [CA3line, CA3line], 'linewidth', line_width, 'color', [0 0 0])
+    line([-10, nPatterns+vStart+3.5], [CA2line, CA2line], 'linewidth', line_width, 'color', [0 0 0])
+    line([-10, nPatterns+vStart+3.5], [CA1line, CA1line], 'linewidth', line_width, 'color', [0 0 0])
+    line([-10, nPatterns+vStart+3.5], [SUBline, SUBline], 'linewidth', line_width, 'color', [0 0 0])
+    
+    hTab = hStart+3.5; % *****
+    hCorrection = 7.5;%1.5;
+    hCorrectionShift = 1; %-1.25; % 100 cell types %-2.75;%-1.75;%-0.75;%-2.0;%-6.5;
+    
+    %%% cell class subregion headers
+    DGstart = 1 + nDGcells/2;
+    
+    strng = sprintf('DG');
+    vCorrection = +0.0;
+    hCorrection = hCorrectionShift;
+    
+    text(-10, DGstart+vCorrection, strng, 'HorizontalAlignment', 'center', 'rotation', 90, 'FontSize', displayFontSize, 'FontWeight', 'bold', 'Color', 'r');
+    
+    CA3start = 1 + nDGcells + nCA3cells/2;
+    
+    strng = sprintf('CA3');
+    vCorrection = 0.0;
+    hCorrection = hCorrectionShift;
+    
+    text(-10, CA3start+vCorrection, strng, 'HorizontalAlignment', 'center', 'rotation', 180, 'FontSize', displayFontSize, 'FontWeight', 'bold');
+    
+    CA2start = 1 + nDGcells + nCA3cells + nCA2cells/2;
+    
+    strng = sprintf('CA2');
+    vCorrection = 0.0;
+    hCorrection = hCorrectionShift;
+    
+    text(-10, CA2start+vCorrection, strng, 'HorizontalAlignment', 'center', 'rotation', 180, 'FontSize', displayFontSize, 'FontWeight', 'bold');
+    
+    CA1start = 1 + nDGcells + nCA3cells + nCA2cells + nCA1cells/2;
+    
+    vCorrection = 0;
+    
+    strng = sprintf('CA1');
+    vCorrection = -1.0; % 0.0 % 100 cell types
+    hCorrection = hCorrectionShift;
+    
+    text(-10, CA1start+vCorrection, strng, 'HorizontalAlignment', 'center', 'rotation', 180, 'FontSize', displayFontSize, 'FontWeight', 'bold');
+    
+            SUBstart = 1 + nDGcells + nCA3cells + nCA2cells + nCA1cells + nSUBcells/2;
+        
+            strng = sprintf('SUB');
+            vCorrection = 0.0;
+            hCorrection = hCorrectionShift;
+        
+        text(-10, SUBstart+vCorrection, strng, 'HorizontalAlignment', 'center', 'rotation', 180, 'FontSize', displayFontSize, 'FontWeight', 'bold');         
+    end
+    
+    if regionCode == ALL || regionCode == EC
+        if regionCode == ALL
+            ECstart = 1 + nCells(DG) + nCells(CA3) + nCells(CA2) + ...
+                      nCells(CA1) + nCells(SUB) + nCells(EC)/2;
+        else
+            ECstart = 1 + nCells(EC)/2;
+        end
+        
+        vCorrection = -0.5;
+        
+        if isAllIn1
+        
+            strng = sprintf('EC');
+            vCorrection = 0.0;
+            hCorrection = hCorrectionShift;
+            
+        else
+            
+            strng = sprintf('EC (%d/{\\color[rgb]{GRAY}%d})', uint16(nCellsE(EC)), uint16(nCells(EC)-nCellsE(EC)));
+            
+        end
+        
+        text(ECstart+vCorrection, hTab+hCorrection, strng, 'HorizontalAlignment', 'center', 'rotation', 180, 'FontSize', displayFontSize, 'FontWeight', 'bold'); 
+    end
+    
+    end % if (1==0)
+    
+    vTab = 1.0;
+    hTab = nPatterns + hTabShift + 3;
+    
+    hold on;
+    
+    vTab = vTab + 0.5;
+    hTab = hTab - 1.5;
+    text(hTab, vTab, '1 count', 'HorizontalAlignment', 'left', ...
+        'Rotation', 0, 'FontSize', displayFontSize, 'Color', ORANGE);
+    
+    vTab = vTab + 0.5;
+    hTab = hTab + 1.5;
+    
+    vTab = vTab + 0.5;
+    hTab = hTab - 1.5;
+    text(hTab, vTab, '2 counts', 'HorizontalAlignment', 'left', ...
+        'Rotation', 0, 'FontSize', displayFontSize, 'Color', TEAL);
+    
+    vTab = vTab + 0.5;
+    hTab = hTab + 1.5;
+    
+    vTab = vTab + 0.5;
+    hTab = hTab - 1.5;
+    text(hTab, vTab, '3 counts', 'HorizontalAlignment', 'left', ...
+        'Rotation', 0, 'FontSize', displayFontSize, 'Color', BROWN);
+    
+    vTab = vTab + 0.5;
+    hTab = hTab + 1.5;
+    
+    vTab = vTab + 0.5;
+    hTab = hTab - 1.5;
+    text(hTab, vTab, '4 counts', 'HorizontalAlignment', 'left', ...
+        'Rotation', 0, 'FontSize', displayFontSize, 'Color', GRAY);
+    
+    
+    % plot labels
+    for i = 1:nAllCells
+        
+        hTab = 0; %nPatterns+3;
+        
+        cellLabel = deblank(cellLabels{i});
+        
+        label_code_cat = [cellLabel];
+        
+        FontNameStr = 'Helvetica';
+        
+        text(hTab, i+0.5, label_code_cat, 'color', BLACK, ...
+            'HorizontalAlignment', 'right', 'Rotation', 0, 'FontSize', displayFontSize, 'Interpreter', 'none');
+        
+    end % for i
+    
+
+    %%%% save plots
+
+    plotFileName = sprintf('./FP_matrix');
+
+    plotFileName = sprintf('%s.eps', plotFileName);
+
+    orient(gcf, 'landscape');
+    orient rotated;
+    print(gcf, '-depsc', '-r800', plotFileName);
+
+end % plot_axon_dendrite_overlap
+

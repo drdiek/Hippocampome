@@ -1,0 +1,979 @@
+This is a multi-part message in MIME format.
+--------------010002020909050503050902
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+
+Dear Diek:
+        Here are the main functions. Good luck.
+
+best,
+
+Wei
+
+--------------010002020909050503050902
+Content-Type: text/plain;
+ name="Parralell_Computaion_Matlab_all.m"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline;
+ filename="Parralell_Computaion_Matlab_all.m"
+
+clear all
+
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+%           Definitions Parameters
+%--------------------------------------------------------------------------
+File_to_execute      = 'rate_45_fre_125_45_all_data_gen_perm_all' %Do_computation_M'
+Parameterfile_ID     = 'ID_002'
+wished_Nr_CPUs       =  14;                      %Whished Nr of CPUs: if -1 maximal avaiable number otherwise the wished number of cpu is included in the MPI Cluster
+Compuations_to_do    =  1:24;                   %Number of Compuations to be done
+Nice_level           =  19;
+
+
+
+
+%##########################################################################
+%##########################################################################
+%           Code 
+%--------------------------------------------------------------------------
+
+Filename_executable  =[File_to_execute '_EXE'];
+
+[Nr_CPUs Nr_Nodes CPU_per_node]    = Check_MPI_Cluster;
+
+%--------------------------------------------------------------------------
+%Computation control file is generated
+%--------------------------------------------------------------------------
+[Parameterfile,file_name_PMatlabGP_Controll ] = ...
+    make_execution_control_file(Compuations_to_do,Filename_executable,Parameterfile_ID,Nice_level);
+
+%--------------------------------------------------------------------------
+%MPIrun script file is generated % 
+%--------------------------------------------------------------------------
+[Used_CPUs Script_filename] =make_MPIRUN_scriptfile(Filename_executable,Parameterfile_ID,Nr_CPUs,wished_Nr_CPUs)
+
+
+
+%--------------------------------------------------------------------------
+%Matlab function which has to be executed is compiled
+%--------------------------------------------------------------------------
+Compile_matlab_code_genEXE(File_to_execute)
+
+
+%--------------------------------------------------------------------------
+%Start compuation
+%--------------------------------------------------------------------------
+unix_command    = ['mpirun ' Script_filename ];
+[t Shell_output]= system(unix_command);
+
+%**************************************************************************
+%Compuation finished on all nodes    **************************************
+%**************************************************************************
+%**************************************************************************
+--------------010002020909050503050902
+Content-Type: text/plain;
+ name="rate_45_fre_125_45_all_data_gen_perm_all.m"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline;
+ filename="rate_45_fre_125_45_all_data_gen_perm_all.m"
+
+function data_gen_perm(dummy,IDX_Comp)
+
+
+ratio_vec=[1 2 4 8 1 2 4 8 1 2 4 8 1 2 4 8 1 2 4 8 1 2 4 8];
+IDX_Comp = str2num(IDX_Comp);
+
+
+if IDX_Comp < 13
+    
+    ratio    = ratio_vec(IDX_Comp);
+    ParElec = [1 2]';
+
+
+    if IDX_Comp < 5
+        num_exp  = 0 ;
+    else
+        if IDX_Comp> 8
+            num_exp = 531 *2  ;
+        else
+            num_exp = 531;
+        end
+    end
+
+    numsmp   = 1000;
+    dt       = 0.001;
+    time_vec = (1:numsmp)*dt;
+    % amp             = [1:5:51];
+    Ac  = 1;
+    Af  = Ac;
+    T        = dt*numsmp;
+    rate_peak_1= [100:80:900];
+
+
+
+    for index_exp = 1 : 531
+
+        powerspt_c = zeros(1000,20,2);
+        powerspt_f = zeros(1000,20,2);
+        crsspctrm_c= zeros(1000,20);
+        crsspctrm_f= zeros(1000,20);
+        for index = 1 :100  % trial set number
+
+            LFP_mat  = zeros(numsmp,1);
+
+            Ana_data_c_1   = Ac*sin(2*pi*12.5*time_vec);       % f=12.5Hz
+            Ana_data       = Ana_data_c_1'+ Ac * 0.5 * randn(size(Ana_data_c_1')); % Noise level is half the amplitude of correct
+
+
+
+            %                 rate_profile    = zeros(1,1000);  time
+            %                 interval        = 5;
+            %                 for index_t  =212.5: 20: 790
+            %                     t_start = index_t;
+            %                     rate_profile(t_start:t_start+interval)= sin(2*pi*100*time_vec(t_start:t_start+interval));   f=100Hz
+            %                 end
+            %                 save_name = ['/home/wwu/parallel/MTM_calibration/new/TP_plots/coh_LFP_spike/rate_profile'];
+            %                 save(save_name,'rate_profile');
+
+
+            %-------generate rate profile (only plato has rate as 5, others are zeros)------------
+            rate_profile_1  = ones(1,numsmp)*5;
+            rate_width_1    = ratio;
+            for index_rate_1= 1 : 11
+                rate_profile_1(rate_peak_1(index_rate_1) - rate_width_1:rate_peak_1(index_rate_1)+ rate_width_1) = 45;
+            end
+
+
+            NrNeuron                  =1;
+            Sim_length                =numsmp*dt;  %sec
+            Latency                   =[];
+            gamma                     =1;
+
+            GDF_1    = MakeGDF_SpiketimesGamma(rate_profile_1,T,gamma,NrNeuron,Latency);
+
+            index_1 = GDF_1(1,:);
+            index_1 =  int16(index_1*1000);
+            index_1 = index_1(find(index_1));
+
+            spike_mat_1          = zeros(numsmp,1);
+            spike_mat_1(index_1) = 1;
+
+            Spike_mat      = spike_mat_1';
+            LFP_mat        = squeeze(Ana_data);
+
+
+
+
+            endsmpind   =size(Spike_mat,2); % that real length of individual trials
+            begsmpind   =1;
+
+
+            Data_mat(:,1)          = squeeze(LFP_mat - mean(LFP_mat));
+            Data_mat(:,2)          = squeeze(Spike_mat - mean(Spike_mat))';
+
+
+            % For each trial we find the difference between the mean and each time
+            % spot for 10 LFP channel and 12  SPIKE channel.
+
+
+
+            sgncmb           = [1 2]';
+            fs               = 1000;
+
+            Freq_range_OI       =[5 100]; % Frequence of interest
+            Freq_step           =5;
+            Nr_Computed_Freq    =(abs(diff(Freq_range_OI))/Freq_step)+1;
+            %diff(a) means find the difference between the adjacent element of a, if a
+            %is m*n matrix. The result of diff(a) is the (m-1)*n matrix, which tells
+            %the difference between the adjacent element of each row.
+            foi_used =[];
+            for foilop = 1:Nr_Computed_Freq
+                foi(foilop).frq         = Freq_range_OI(1)+(foilop-1) *Freq_step;    % 5 is step size
+                foi(foilop).t_fnumsmp   = 200;          % Slinding window length
+                foi(foilop).tapsmofrq   = 10;           % Smothing Frequency
+                foi_used    = [foi_used   foi(foilop).frq  ];
+            end
+            foi_used  =  fliplr(foi_used);
+            ana.numsmp          = size(Spike_mat,1);     %SamplePoints of the Signal
+            ana.foi             = foi;                  %Frequency of interest
+            ana.numfoi          = length(ana.foi);      %Number of Frequncy of Interest
+            %ana.sgn             = provalarr(sgncmb);
+            ana.smpfrq          = fs;               %Sampling Frequency
+            %ana.per             = per; clear per;
+            ana.sgncmb          = sgncmb;               %all Signal combinations
+            ana.numsgncmb       = size(ana.sgncmb,2);           %Number of signal Combinations
+            ana.cutdatindcmb    = sgncmb;
+            %ana.sgn             = provalarr(ana.sgncmb);
+            ana.numsgn          = 2;
+            numsgn              =2;
+            numfoi              = ana.numfoi;
+            numsgncmb           = ana.numsgncmb;
+
+
+            % Taper uses dpss data to revise the kernel.
+            save_name= ['/home/wwu/parallel/MTM_calibration/new/TP_plots/MTM_precomp'];
+            %         save_name= ['//Lnxfs1/wwu/parallel/MTM_calibration/new/TP_plots/MTM_precomp'];
+            load(save_name);
+
+            powspctrm = zeros(numsmp,numfoi,numsgn);
+            crsspctrm = complex(zeros(numsmp,numfoi,numsgncmb));
+
+
+            numdatbns = endsmpind - begsmpind +1;
+            pad = zeros(numsmp - numdatbns,1);
+            datspctra = complex(zeros(numsmp,numsgn));
+            for sgnlop = 1:numsgn
+                datspctra(:,sgnlop) = fft([Data_mat(:,sgnlop);pad],[],1); % Spectra for each channel per trial
+            end
+            for foilop = 1:ana.numfoi% Loop over frequency of interests
+                for taplop = 1:numtap(foilop)
+                    autspctrmacttap = complex(zeros(numsmp,numsgn));
+                    for sgnlop = 1:ana.numsgn % Loop over signals
+                        dum = ifft(datspctra(:,sgnlop) .* ...
+                            [knlspctrmstr{foilop}(:,taplop)],[],1);
+                        autspctrmacttap(:,sgnlop) = dum([ceil(numsmp./2)+1:numsmp, ...
+                            1:ceil(numsmp./2)]);
+                    end
+                    powspctrm(:,foilop,:) = squeeze(powspctrm(:,foilop,:)) + ...
+                        (abs(autspctrmacttap .^ 2) ./ numtap(foilop));
+                    for sgncmblop = 1:ana.numsgncmb% Loop over signal combination for crossspectra
+                        crsspctrm(:,foilop,sgncmblop) = crsspctrm(:,foilop,sgncmblop) + ...
+                            (autspctrmacttap(:,ana.cutdatindcmb(1,sgncmblop)) .* ...
+                            conj(autspctrmacttap(:,ana.cutdatindcmb(2,sgncmblop))) ...
+                            ./ numtap(foilop));
+                    end
+                end
+            end
+            clear dum;
+            % Dimensions time x number of frequncies of interest x signal combinations
+            Powerspec_struct{index} =powspctrm;
+            Crsspctrm_struct{index} =crsspctrm;
+
+
+
+
+
+
+
+
+            LFP_mat    = zeros(numsmp,1);
+            Spike_mat  = zeros(numsmp,1);
+
+
+
+            Ana_data_f_1   = Af*sin(2*pi*12.5*time_vec);       % f=12.5Hz
+            Ana_data       = Ana_data_f_1'+Af * 0.5 * randn(size(Ana_data_f_1')); % Noise level is half the amplitude of correct
+
+
+
+            rate      =   [5 5];
+            T         = Sim_length;
+            gamma     = 1;
+            NrNeuron  = 1;
+            Latency   = [];
+
+            GDF    = MakeGDF_SpiketimesGamma(rate,T,gamma,NrNeuron,Latency);
+
+            index_1 =  GDF(1,:);
+            index_1 =  int16(index_1*1000);
+            index_1 = index_1(find(index_1));
+
+
+            spike_mat            = zeros(1,numsmp);
+            spike_mat(index_1)   = 1;
+
+
+            Spike_mat(:)      = spike_mat';
+            LFP_mat(:)        = squeeze(Ana_data);
+
+
+
+
+            endsmpind   =size(Spike_mat,1); % that real length of individual trials
+            begsmpind   =1;
+
+
+            Data_mat(:,1)          = (LFP_mat - mean(LFP_mat));
+            Data_mat(:,2)          = squeeze(Spike_mat - mean(Spike_mat));
+
+
+            % For each trial we find the difference between the mean and each time
+            % spot for 10 LFP channel and 12  SPIKE channel.
+
+
+
+            sgncmb           = [1 2]';
+            fs               = 1000;
+
+            Freq_range_OI       =[5 100]; % Frequence of interest
+            Freq_step           =5;
+            Nr_Computed_Freq    =(abs(diff(Freq_range_OI))/Freq_step)+1;
+            %diff(a) means find the difference between the adjacent element of a, if a
+            %is m*n matrix. The result of diff(a) is the (m-1)*n matrix, which tells
+            %the difference between the adjacent element of each row.
+            foi_used =[];
+            for foilop = 1:Nr_Computed_Freq
+                foi(foilop).frq         = Freq_range_OI(1)+(foilop-1) *Freq_step;    % 5 is step size
+                foi(foilop).t_fnumsmp   = 200;          % Slinding window length
+                foi(foilop).tapsmofrq   = 10;           % Smothing Frequency
+                foi_used    = [foi_used   foi(foilop).frq  ];
+            end
+            foi_used  =  fliplr(foi_used);
+            ana.numsmp          = size(Spike_mat,1);     %SamplePoints of the Signal
+            ana.foi             = foi;                  %Frequency of interest
+            ana.numfoi          = length(ana.foi);      %Number of Frequncy of Interest
+            %ana.sgn             = provalarr(sgncmb);
+            ana.smpfrq          = fs;               %Sampling Frequency
+            %ana.per             = per; clear per;
+            ana.sgncmb          = sgncmb;               %all Signal combinations
+            ana.numsgncmb       = size(ana.sgncmb,2);           %Number of signal Combinations
+            ana.cutdatindcmb    = sgncmb;
+            %ana.sgn             = provalarr(ana.sgncmb);
+            ana.numsgn          = 2;
+            numsgn              =2;
+            numfoi              = ana.numfoi;
+            numsgncmb           = ana.numsgncmb;
+
+
+            % Taper uses dpss data to revise the kernel.
+            %         save_name= ['/home/wwu/parallel/MTM_falibration/new/TP_plots/MTM_precomp'];
+            %         load(save_name);
+
+            powspctrm = zeros(numsmp,numfoi,numsgn);
+            crsspctrm = complex(zeros(numsmp,numfoi,numsgncmb));
+
+
+            numdatbns = endsmpind - begsmpind +1;
+            pad = zeros(numsmp - numdatbns,1);
+            datspctra = complex(zeros(numsmp,numsgn));
+            for sgnlop = 1:numsgn
+                datspctra(:,sgnlop) = fft([Data_mat(:,sgnlop);pad],[],1); % Spectra for each channel per trial
+            end
+            for foilop = 1:ana.numfoi% Loop over frequency of interests
+                for taplop = 1:numtap(foilop)
+                    autspctrmacttap = complex(zeros(numsmp,numsgn));
+                    for sgnlop = 1:ana.numsgn % Loop over signals
+                        dum = ifft(datspctra(:,sgnlop) .* ...
+                            [knlspctrmstr{foilop}(:,taplop)],[],1);
+                        autspctrmacttap(:,sgnlop) = dum([ceil(numsmp./2)+1:numsmp, ...
+                            1:ceil(numsmp./2)]);
+                    end
+                    powspctrm(:,foilop,:) = squeeze(powspctrm(:,foilop,:)) + ...
+                        (abs(autspctrmacttap .^ 2) ./ numtap(foilop));
+                    for sgncmblop = 1:ana.numsgncmb% Loop over signal combination for crossspectra
+                        crsspctrm(:,foilop,sgncmblop) = crsspctrm(:,foilop,sgncmblop) + ...
+                            (autspctrmacttap(:,ana.cutdatindcmb(1,sgncmblop)) .* ...
+                            conj(autspctrmacttap(:,ana.cutdatindcmb(2,sgncmblop))) ...
+                            ./ numtap(foilop));
+                    end
+                end
+            end
+            clear dum;
+            % Dimensions time x number of frequncies of interest x signal combinations
+
+            Powerspec_struct{index+100} =powspctrm;
+            Crsspctrm_struct{index+100} =crsspctrm;
+
+            powerspt_c  = powerspt_c + Powerspec_struct{index};
+            crsspctrm_c = crsspctrm_c+ Crsspctrm_struct{index};
+            powerspt_f  = powerspt_f + Powerspec_struct{index+100};
+            crsspctrm_f = crsspctrm_f+ Crsspctrm_struct{index+100};
+        end
+
+        powerspt_c_l         = powerspt_c;
+        index_z              = find(powerspt_c_l ==0);
+        powerspt_c_l(index_z)=1;
+        coh_c                = crsspctrm_c ./ sqrt( ...
+            powerspt_c_l(:,:,ParElec(1,:)) .* ...
+            powerspt_c_l(:,:,ParElec(2,:)));
+
+
+        powerspt_f_l         = powerspt_f;
+        index_z              = find(powerspt_f_l ==0);
+        powerspt_f_l(index_z)=1;
+        coh_f                = crsspctrm_f ./ sqrt( ...
+            powerspt_f_l(:,:,ParElec(1,:)) .* ...
+            powerspt_f_l(:,:,ParElec(2,:)));
+
+
+        Theta_coh_o = abs(coh_c) - abs(coh_f);
+
+
+
+        Num_small_b = zeros(size(Theta_coh_o));
+        Num_large_b = zeros(size(Theta_coh_o));
+        Num_small   = zeros(size(Theta_coh_o));
+        Num_large   = zeros(size(Theta_coh_o));
+
+
+        for index_p =1 : 100
+            IDX_new_a = randperm(200);
+            IDX_c     = IDX_new_a(1:100);
+            IDX_f     = IDX_new_a(101:200);
+
+
+
+            powerspt_c = zeros(1000,20,2);
+            crsspctrm_c= zeros(1000,20);
+
+            for perlop  =  1 :100
+                nametrial_c  =  IDX_c(perlop);
+                powerspt_c   =  powerspt_c + Powerspec_struct{nametrial_c};
+                crsspctrm_c  =  crsspctrm_c+ Crsspctrm_struct{nametrial_c};
+            end
+            Foi      = [5:5:100];
+
+            powerspt_c_l         = powerspt_c;
+            index_z              = find(powerspt_c_l ==0);
+            powerspt_c_l(index_z)=1;
+            coherence_c          = crsspctrm_c ./ sqrt( ...
+                powerspt_c_l(:,:,ParElec(1,:)) .* ...
+                powerspt_c_l(:,:,ParElec(2,:)));
+
+
+
+
+
+            powerspt_f = zeros(1000,20,2);
+            crsspctrm_f= zeros(1000,20);
+            for perlop  =  1 :100
+                nametrial_f  =  IDX_f(perlop);
+                powerspt_f   = powerspt_f + Powerspec_struct{nametrial_f};
+                crsspctrm_f  = crsspctrm_f+ Crsspctrm_struct{nametrial_f};
+            end
+            powerspt_f_l         = powerspt_f;
+            index_z              = find(powerspt_f_l ==0);
+            powerspt_f_l(index_z)=1;
+            coherence_f          = crsspctrm_f ./ sqrt( ...
+                powerspt_f_l(:,:,ParElec(1,:)) .* ...
+                powerspt_f_l(:,:,ParElec(2,:)));
+
+
+
+
+
+            Theta_coh            = abs(coherence_c) -abs(coherence_f);
+
+            Num_coh_s   = zeros(size(Theta_coh_o));
+            Num_coh_l   = zeros(size(Theta_coh_o));
+
+            Minus  = Theta_coh_o - Theta_coh;
+            Num_coh_s(find(Minus < 0 )) = 1;
+            Num_small_b = Num_small_b + Num_coh_s;
+            Num_coh_l(find(Minus > 0 )) = 1;
+            Num_large_b = Num_large_b + Num_coh_l;
+        end
+
+
+        Num_small_b  = Num_small_b./100;
+        Num_large_b  = Num_large_b./100;
+
+        %----find 1.5% part-----------------------
+        Num_small(find(Num_small_b >= 0.985)) = 1 ;
+        Num_large(find(Num_large_b >= 0.985)) = 1 ;
+
+
+        %-----------------------------------------------------
+
+        index_final = index_exp + num_exp;
+
+        if IDX_Comp < 5
+            IDX_final  = IDX_Comp ;
+        else
+            if IDX_Comp> 8
+                IDX_final = IDX_Comp -8   ;
+            else
+                IDX_final = IDX_Comp-4;
+            end
+        end
+        save_name = ['/data3/Projekte_Pipa/Aktuell/P06_007_Wei_and_gordon_Toy_data_cal/Run1/LFP_spike_9/Comp_ID' num2str(IDX_final)  '_ExpID' num2str(index_final) ];
+        save(save_name,'Num_small','Num_large');
+    end
+    
+else
+
+
+    ratio    = ratio_vec(IDX_Comp);
+    ParElec = [1 2]';
+
+
+    if IDX_Comp < 17
+        num_exp  = 0 ;
+    else
+        if IDX_Comp> 20
+            num_exp = 531 *2  ;
+        else
+            num_exp = 531;
+        end
+    end
+
+    numsmp   = 1000;
+    dt       = 0.001;
+    time_vec = (1:numsmp)*dt;
+    % amp             = [1:5:51];
+    Ac  = 1;
+    Af  = Ac;
+    T        = dt*numsmp;
+    rate_peak_1= [25:20:965];
+
+
+    for index_exp = 1 : 531
+
+        powerspt_c = zeros(1000,20,2);
+        powerspt_f = zeros(1000,20,2);
+        crsspctrm_c= zeros(1000,20);
+        crsspctrm_f= zeros(1000,20);
+        for index = 1 :100  % trial set number
+
+            LFP_mat  = zeros(numsmp,1);
+
+            Ana_data_c_1   = Ac*sin(2*pi*50*time_vec);       % f=12.5Hz
+            Ana_data       = Ana_data_c_1'+ Ac * 0.5 * randn(size(Ana_data_c_1')); % Noise level is half the amplitude of correct
+
+
+
+            %                 rate_profile    = zeros(1,1000);  time
+            %                 interval        = 5;
+            %                 for index_t  =250: 20: 790
+            %                     t_start = index_t;
+            %                     rate_profile(t_start:t_start+interval)= sin(2*pi*100*time_vec(t_start:t_start+interval));   f=100Hz
+            %                 end
+            %                 save_name = ['/home/wwu/parallel/MTM_calibration/new/TP_plots/coh_LFP_spike/rate_profile'];
+            %                 save(save_name,'rate_profile');
+
+
+            %-------generate rate profile (only plato has rate as 5, others are zeros)------------
+            rate_profile_1  = ones(1,numsmp)*5;
+            rate_width_1    = ratio;
+            for index_rate_1= 1 : 48
+                rate_profile_1(rate_peak_1(index_rate_1) - rate_width_1:rate_peak_1(index_rate_1)+ rate_width_1) = 45;
+            end
+
+
+            NrNeuron                  =1;
+            Sim_length                =numsmp*dt;  %sec
+            Latency                   =[];
+            gamma                     =1;
+
+            GDF_1    = MakeGDF_SpiketimesGamma(rate_profile_1,T,gamma,NrNeuron,Latency);
+
+            index_1 = GDF_1(1,:);
+            index_1 =  int16(index_1*1000);
+            index_1 = index_1(find(index_1));
+
+            spike_mat_1          = zeros(numsmp,1);
+            spike_mat_1(index_1) = 1;
+
+            Spike_mat      = spike_mat_1';
+            LFP_mat        = squeeze(Ana_data);
+
+
+
+
+            endsmpind   =size(Spike_mat,2); % that real length of individual trials
+            begsmpind   =1;
+
+
+            Data_mat(:,1)          = squeeze(LFP_mat - mean(LFP_mat));
+            Data_mat(:,2)          = squeeze(Spike_mat - mean(Spike_mat))';
+
+
+            % For each trial we find the difference between the mean and each time
+            % spot for 10 LFP channel and 12  SPIKE channel.
+
+
+
+            sgncmb           = [1 2]';
+            fs               = 1000;
+
+            Freq_range_OI       =[5 100]; % Frequence of interest
+            Freq_step           =5;
+            Nr_Computed_Freq    =(abs(diff(Freq_range_OI))/Freq_step)+1;
+            %diff(a) means find the difference between the adjacent element of a, if a
+            %is m*n matrix. The result of diff(a) is the (m-1)*n matrix, which tells
+            %the difference between the adjacent element of each row.
+            foi_used =[];
+            for foilop = 1:Nr_Computed_Freq
+                foi(foilop).frq         = Freq_range_OI(1)+(foilop-1) *Freq_step;    % 5 is step size
+                foi(foilop).t_fnumsmp   = 200;          % Slinding window length
+                foi(foilop).tapsmofrq   = 10;           % Smothing Frequency
+                foi_used    = [foi_used   foi(foilop).frq  ];
+            end
+            foi_used  =  fliplr(foi_used);
+            ana.numsmp          = size(Spike_mat,1);     %SamplePoints of the Signal
+            ana.foi             = foi;                  %Frequency of interest
+            ana.numfoi          = length(ana.foi);      %Number of Frequncy of Interest
+            %ana.sgn             = provalarr(sgncmb);
+            ana.smpfrq          = fs;               %Sampling Frequency
+            %ana.per             = per; clear per;
+            ana.sgncmb          = sgncmb;               %all Signal combinations
+            ana.numsgncmb       = size(ana.sgncmb,2);           %Number of signal Combinations
+            ana.cutdatindcmb    = sgncmb;
+            %ana.sgn             = provalarr(ana.sgncmb);
+            ana.numsgn          = 2;
+            numsgn              =2;
+            numfoi              = ana.numfoi;
+            numsgncmb           = ana.numsgncmb;
+
+
+            % Taper uses dpss data to revise the kernel.
+            save_name= ['/home/wwu/parallel/MTM_calibration/new/TP_plots/MTM_precomp'];
+            %         save_name= ['//Lnxfs1/wwu/parallel/MTM_calibration/new/TP_plots/MTM_precomp'];
+            load(save_name);
+
+            powspctrm = zeros(numsmp,numfoi,numsgn);
+            crsspctrm = complex(zeros(numsmp,numfoi,numsgncmb));
+
+
+            numdatbns = endsmpind - begsmpind +1;
+            pad = zeros(numsmp - numdatbns,1);
+            datspctra = complex(zeros(numsmp,numsgn));
+            for sgnlop = 1:numsgn
+                datspctra(:,sgnlop) = fft([Data_mat(:,sgnlop);pad],[],1); % Spectra for each channel per trial
+            end
+            for foilop = 1:ana.numfoi% Loop over frequency of interests
+                for taplop = 1:numtap(foilop)
+                    autspctrmacttap = complex(zeros(numsmp,numsgn));
+                    for sgnlop = 1:ana.numsgn % Loop over signals
+                        dum = ifft(datspctra(:,sgnlop) .* ...
+                            [knlspctrmstr{foilop}(:,taplop)],[],1);
+                        autspctrmacttap(:,sgnlop) = dum([ceil(numsmp./2)+1:numsmp, ...
+                            1:ceil(numsmp./2)]);
+                    end
+                    powspctrm(:,foilop,:) = squeeze(powspctrm(:,foilop,:)) + ...
+                        (abs(autspctrmacttap .^ 2) ./ numtap(foilop));
+                    for sgncmblop = 1:ana.numsgncmb% Loop over signal combination for crossspectra
+                        crsspctrm(:,foilop,sgncmblop) = crsspctrm(:,foilop,sgncmblop) + ...
+                            (autspctrmacttap(:,ana.cutdatindcmb(1,sgncmblop)) .* ...
+                            conj(autspctrmacttap(:,ana.cutdatindcmb(2,sgncmblop))) ...
+                            ./ numtap(foilop));
+                    end
+                end
+            end
+            clear dum;
+            % Dimensions time x number of frequncies of interest x signal combinations
+            Powerspec_struct{index} =powspctrm;
+            Crsspctrm_struct{index} =crsspctrm;
+
+
+
+
+
+
+
+
+            LFP_mat    = zeros(numsmp,1);
+            Spike_mat  = zeros(numsmp,1);
+
+
+
+            Ana_data_f_1   = Af*sin(2*pi*50*time_vec);       % f=50Hz
+            Ana_data       = Ana_data_f_1'+Af * 0.5 * randn(size(Ana_data_f_1')); % Noise level is half the amplitude of correct
+
+
+
+            rate      =   [5 5];
+            T         = Sim_length;
+            gamma     = 1;
+            NrNeuron  = 1;
+            Latency   = [];
+
+            GDF    = MakeGDF_SpiketimesGamma(rate,T,gamma,NrNeuron,Latency);
+
+            index_1 =  GDF(1,:);
+            index_1 =  int16(index_1*1000);
+            index_1 = index_1(find(index_1));
+
+
+            spike_mat            = zeros(1,numsmp);
+            spike_mat(index_1)   = 1;
+
+
+            Spike_mat(:)      = spike_mat';
+            LFP_mat(:)        = squeeze(Ana_data);
+
+
+
+
+            endsmpind   =size(Spike_mat,1); % that real length of individual trials
+            begsmpind   =1;
+
+
+            Data_mat(:,1)          = (LFP_mat - mean(LFP_mat));
+            Data_mat(:,2)          = squeeze(Spike_mat - mean(Spike_mat));
+
+
+            % For each trial we find the difference between the mean and each time
+            % spot for 10 LFP channel and 12  SPIKE channel.
+
+
+
+            sgncmb           = [1 2]';
+            fs               = 1000;
+
+            Freq_range_OI       =[5 100]; % Frequence of interest
+            Freq_step           =5;
+            Nr_Computed_Freq    =(abs(diff(Freq_range_OI))/Freq_step)+1;
+            %diff(a) means find the difference between the adjacent element of a, if a
+            %is m*n matrix. The result of diff(a) is the (m-1)*n matrix, which tells
+            %the difference between the adjacent element of each row.
+            foi_used =[];
+            for foilop = 1:Nr_Computed_Freq
+                foi(foilop).frq         = Freq_range_OI(1)+(foilop-1) *Freq_step;    % 5 is step size
+                foi(foilop).t_fnumsmp   = 200;          % Slinding window length
+                foi(foilop).tapsmofrq   = 10;           % Smothing Frequency
+                foi_used    = [foi_used   foi(foilop).frq  ];
+            end
+            foi_used  =  fliplr(foi_used);
+            ana.numsmp          = size(Spike_mat,1);     %SamplePoints of the Signal
+            ana.foi             = foi;                  %Frequency of interest
+            ana.numfoi          = length(ana.foi);      %Number of Frequncy of Interest
+            %ana.sgn             = provalarr(sgncmb);
+            ana.smpfrq          = fs;               %Sampling Frequency
+            %ana.per             = per; clear per;
+            ana.sgncmb          = sgncmb;               %all Signal combinations
+            ana.numsgncmb       = size(ana.sgncmb,2);           %Number of signal Combinations
+            ana.cutdatindcmb    = sgncmb;
+            %ana.sgn             = provalarr(ana.sgncmb);
+            ana.numsgn          = 2;
+            numsgn              =2;
+            numfoi              = ana.numfoi;
+            numsgncmb           = ana.numsgncmb;
+
+
+            % Taper uses dpss data to revise the kernel.
+            %         save_name= ['/home/wwu/parallel/MTM_falibration/new/TP_plots/MTM_precomp'];
+            %         load(save_name);
+
+            powspctrm = zeros(numsmp,numfoi,numsgn);
+            crsspctrm = complex(zeros(numsmp,numfoi,numsgncmb));
+
+
+            numdatbns = endsmpind - begsmpind +1;
+            pad = zeros(numsmp - numdatbns,1);
+            datspctra = complex(zeros(numsmp,numsgn));
+            for sgnlop = 1:numsgn
+                datspctra(:,sgnlop) = fft([Data_mat(:,sgnlop);pad],[],1); % Spectra for each channel per trial
+            end
+            for foilop = 1:ana.numfoi% Loop over frequency of interests
+                for taplop = 1:numtap(foilop)
+                    autspctrmacttap = complex(zeros(numsmp,numsgn));
+                    for sgnlop = 1:ana.numsgn % Loop over signals
+                        dum = ifft(datspctra(:,sgnlop) .* ...
+                            [knlspctrmstr{foilop}(:,taplop)],[],1);
+                        autspctrmacttap(:,sgnlop) = dum([ceil(numsmp./2)+1:numsmp, ...
+                            1:ceil(numsmp./2)]);
+                    end
+                    powspctrm(:,foilop,:) = squeeze(powspctrm(:,foilop,:)) + ...
+                        (abs(autspctrmacttap .^ 2) ./ numtap(foilop));
+                    for sgncmblop = 1:ana.numsgncmb% Loop over signal combination for crossspectra
+                        crsspctrm(:,foilop,sgncmblop) = crsspctrm(:,foilop,sgncmblop) + ...
+                            (autspctrmacttap(:,ana.cutdatindcmb(1,sgncmblop)) .* ...
+                            conj(autspctrmacttap(:,ana.cutdatindcmb(2,sgncmblop))) ...
+                            ./ numtap(foilop));
+                    end
+                end
+            end
+            clear dum;
+            % Dimensions time x number of frequncies of interest x signal combinations
+
+            Powerspec_struct{index+100} =powspctrm;
+            Crsspctrm_struct{index+100} =crsspctrm;
+
+            powerspt_c  = powerspt_c + Powerspec_struct{index};
+            crsspctrm_c = crsspctrm_c+ Crsspctrm_struct{index};
+            powerspt_f  = powerspt_f + Powerspec_struct{index+100};
+            crsspctrm_f = crsspctrm_f+ Crsspctrm_struct{index+100};
+        end
+
+        powerspt_c_l         = powerspt_c;
+        index_z              = find(powerspt_c_l ==0);
+        powerspt_c_l(index_z)=1;
+        coh_c                = crsspctrm_c ./ sqrt( ...
+            powerspt_c_l(:,:,ParElec(1,:)) .* ...
+            powerspt_c_l(:,:,ParElec(2,:)));
+
+
+        powerspt_f_l         = powerspt_f;
+        index_z              = find(powerspt_f_l ==0);
+        powerspt_f_l(index_z)=1;
+        coh_f                = crsspctrm_f ./ sqrt( ...
+            powerspt_f_l(:,:,ParElec(1,:)) .* ...
+            powerspt_f_l(:,:,ParElec(2,:)));
+
+
+        Theta_coh_o = abs(coh_c) - abs(coh_f);
+
+
+
+        Num_small_b = zeros(size(Theta_coh_o));
+        Num_large_b = zeros(size(Theta_coh_o));
+        Num_small   = zeros(size(Theta_coh_o));
+        Num_large   = zeros(size(Theta_coh_o));
+
+
+        for index_p =1 : 100
+            IDX_new_a = randperm(200);
+            IDX_c     = IDX_new_a(1:100);
+            IDX_f     = IDX_new_a(101:200);
+
+
+
+            powerspt_c = zeros(1000,20,2);
+            crsspctrm_c= zeros(1000,20);
+
+            for perlop  =  1 :100
+                nametrial_c  =  IDX_c(perlop);
+                powerspt_c   =  powerspt_c + Powerspec_struct{nametrial_c};
+                crsspctrm_c  =  crsspctrm_c+ Crsspctrm_struct{nametrial_c};
+            end
+            Foi      = [5:5:100];
+
+            powerspt_c_l         = powerspt_c;
+            index_z              = find(powerspt_c_l ==0);
+            powerspt_c_l(index_z)=1;
+            coherence_c          = crsspctrm_c ./ sqrt( ...
+                powerspt_c_l(:,:,ParElec(1,:)) .* ...
+                powerspt_c_l(:,:,ParElec(2,:)));
+
+
+
+
+
+            powerspt_f = zeros(1000,20,2);
+            crsspctrm_f= zeros(1000,20);
+            for perlop  =  1 :100
+                nametrial_f  =  IDX_f(perlop);
+                powerspt_f   = powerspt_f + Powerspec_struct{nametrial_f};
+                crsspctrm_f  = crsspctrm_f+ Crsspctrm_struct{nametrial_f};
+            end
+            powerspt_f_l         = powerspt_f;
+            index_z              = find(powerspt_f_l ==0);
+            powerspt_f_l(index_z)=1;
+            coherence_f          = crsspctrm_f ./ sqrt( ...
+                powerspt_f_l(:,:,ParElec(1,:)) .* ...
+                powerspt_f_l(:,:,ParElec(2,:)));
+
+
+
+
+
+            Theta_coh            = abs(coherence_c) -abs(coherence_f);
+
+            Num_coh_s   = zeros(size(Theta_coh_o));
+            Num_coh_l   = zeros(size(Theta_coh_o));
+
+            Minus  = Theta_coh_o - Theta_coh;
+            Num_coh_s(find(Minus < 0 )) = 1;
+            Num_small_b = Num_small_b + Num_coh_s;
+            Num_coh_l(find(Minus > 0 )) = 1;
+            Num_large_b = Num_large_b + Num_coh_l;
+        end
+
+
+        Num_small_b  = Num_small_b./100;
+        Num_large_b  = Num_large_b./100;
+
+        %----find 1.5% part-----------------------
+        Num_small(find(Num_small_b >= 0.985)) = 1 ;
+        Num_large(find(Num_large_b >= 0.985)) = 1 ;
+
+
+        index_final = index_exp + num_exp;
+
+        if IDX_Comp < 17
+            IDX_final  = IDX_Comp - 12 ;
+        else
+            if IDX_Comp> 20
+                IDX_final = IDX_Comp -20   ;
+            else
+                IDX_final = IDX_Comp-16;
+            end
+        end
+        save_name = ['/data3/Projekte_Pipa/Aktuell/P06_007_Wei_and_gordon_Toy_data_cal/Run1/LFP_spike_10/Comp_ID' num2str(IDX_final)  '_ExpID' num2str(index_final) ];
+        save(save_name,'Num_small','Num_large');
+    end
+end
+--------------010002020909050503050902
+Content-Type: text/plain;
+ name="Make_Hostfile_for_this_Cluster.m"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline;
+ filename="Make_Hostfile_for_this_Cluster.m"
+
+wished_Nr_CPUs       = -1; %Whished Nr of CPUs: if -1 maximal avaiable number otherwise the wished number of cpu is included in the MPI Cluster
+
+
+% Node architecure should be defined by the administrator
+
+% Master Node -------------------------------------------------------------
+struct_CPU_Node{1}.NrCPU    =1;                 % NrCPU equal the number of CPU used to compute - the m,aster process will be started in addtion
+struct_CPU_Node{1}.IP       =['141.5.6.181'];   
+struct_CPU_Node{1}.Priotity =1;                 % 3=must be included 2=should be included 1= should not bee included
+
+% Slave Nodes -------------------------------------------------------------
+struct_CPU_Node{2}.NrCPU    =1;
+struct_CPU_Node{2}.IP       =['141.5.6.182'];   % Slave 1
+struct_CPU_Node{2}.Priotity =1;                 % 3=must be included 2=should be included 1= should not bee included
+
+struct_CPU_Node{3}.NrCPU    =2;
+struct_CPU_Node{3}.IP       =['141.5.6.183'];   % Slave 2
+struct_CPU_Node{3}.Priotity =2;                 % 3=must be included 2=should be included 1= should not bee included
+
+struct_CPU_Node{4}.NrCPU    =2;
+struct_CPU_Node{4}.IP       =['141.5.6.184'];   % Slave 3
+struct_CPU_Node{4}.Priotity =2;                 % 3=must be included 2=should be included 1= should not bee included
+
+struct_CPU_Node{5}.NrCPU    =2;
+struct_CPU_Node{5}.IP       =['141.5.6.185'];   % Slave 4
+struct_CPU_Node{5}.Priotity =2;                 % 3=must be included 2=should be included 1= should not bee included
+
+struct_CPU_Node{6}.NrCPU    =2;
+struct_CPU_Node{6}.IP       =['141.5.6.186'];   % Slave 5
+struct_CPU_Node{6}.Priotity =2;                 % 3=must be included 2=should be included 1= should not bee included
+
+struct_CPU_Node{7}.NrCPU    =2;
+struct_CPU_Node{7}.IP       =['141.5.6.187'];   % Slave 6
+struct_CPU_Node{7}.Priotity =2;                 % 3=must be included 2=should be included 1= should not bee included
+
+struct_CPU_Node{8}.NrCPU    =2;
+struct_CPU_Node{8}.IP       =['141.5.6.188'];   % Slave 7
+struct_CPU_Node{8}.Priotity =2;                 % 3=must be included 2=should be included 1= should not bee included
+
+
+disp('**************************************************************************')
+disp('Automatic Generation of the MPI Hostfile')
+disp('**************************************************************************')
+
+%--------------------------------------------------------------------------
+%--------------------------------------------------------------------------
+%Lame MPI hostfile is generated 
+%--------------------------------------------------------------------------
+[Nr_CPUs NrNodes]           = Make_LameMPI_Hostfile(wished_Nr_CPUs,struct_CPU_Node);
+
+save('Cluster_Definition_File_Cluster_Queues','struct_CPU_Node','Nr_CPUs','NrNodes')
+disp('--------------------------------------------------------------------------')
+disp(['The Cluster consists of ' num2str(NrNodes) ' Nodes'])
+disp(['with together ' num2str(Nr_CPUs) ' CPUs'])
+disp('--------------------------------------------------------------------------')
+disp('--------------------------------------------------------------------------')
+
+%**************************************************************************
+%WHAT NEXT   **************************************************************
+%**************************************************************************
+%**************************************************************************
+disp('**************************************************************************')
+disp('*******************  WHATs NEXT  *****************************************')
+disp('**************************************************************************')
+
+disp('1) Run "lamehalt"')
+disp('2) Run "lameboot  MPI_Lame_hostfile_auto.txt"')
+disp('3) Run "lamnodes"')
+--------------010002020909050503050902
+Content-Type: application/octet-stream;
+ name="pcalc"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="pcalc"
+
+

@@ -1,0 +1,203 @@
+function define_constants()
+
+    % define constants
+    DG  = 1;
+    CA3 = 2;
+    CA2 = 3;
+    CA1 = 4;
+    Sub = 5;
+    EC  = 6;
+    
+    DG_SMO  =  1;
+    DG_SMI  =  2;
+    DG_SG   =  3;
+    DG_H    =  4;
+    CA3_SLM =  5;
+    CA3_SR  =  6;
+    CA3_SL  =  7;
+    CA3_SP  =  8;
+    CA3_SO  =  9;
+    CA2_SLM = 10;
+    CA2_SR  = 11;
+    CA2_SP  = 12;
+    CA2_SO  = 13;
+    CA1_SLM = 14;
+    CA1_SR  = 15;
+    CA1_SP  = 16;
+    CA1_SO  = 17;
+    SUB_SM  = 18;
+    SUB_SP  = 19;
+    SUB_PL  = 20;
+    EC_LI   = 21;
+    EC_LII  = 22;
+    EC_LIII = 23;
+    EC_LIV  = 24;
+    EC_LV   = 25;
+    EC_LVI  = 26;
+    
+    YES_NEURITE   =  1;
+    MAYBE_NEURITE =  0;
+    NO_NEURITE    = -1;
+    
+    INHIBITORY = 0;
+    EXCITATORY = 1;
+    
+    GRANULE      = 1;
+    MOSSY        = 2;
+    PYRAMIDAL    = 3;
+    GIANT        = 4;
+    CAJALRETZIUS = 5;
+    
+    UNIQUE_ID_COL              =  1;
+    SUBREGION_COL              =  2;
+    EI_COL                     =  3;
+    AD_PATTERN_COL             =  4;
+    P_COL                      =  5;
+    PROJECTION_PATTERNING_COL  =  6;
+    NEURONAL_TYPE_COL          =  7;
+    SUPERTYPE_ID_COL           =  8;
+    SUPERTYPE_DESCRIPTOR_COL   =  9;
+    CANONICAL_COL              = 10;
+    
+    S_DG_COL                   = 11;
+    S_CA3_COL                  = 12;
+    S_CA2_COL                  = 13;
+    S_CA1_COL                  = 14;
+    S_SUB_COL                  = 15;
+    S_EC_LI_COL                = 16;
+    S_EC_LII_COL               = 17;
+    S_EC_LIII_COL              = 18;
+    S_EC_LIV_COL               = 19;
+    S_EC_LV_COL                = 20;
+    S_EC_LVI_COL               = 21;
+
+    E_OR_I_COL                 = 22;
+    
+    GRANULE_COL                = 23;
+    MOSSY_COL                  = 24;
+    PYRAMIDAL_COL              = 25;
+    GIANT_COL                  = 26;
+    CAJALRETZIUS_COL           = 27;
+    
+    AIS_COL                    = 28;    
+    IS_COL                     = 29;
+    
+    ST_A_DG_SMO_COL               = 30;
+    ST_A_DG_SMI_COL               = 31;
+    ST_A_DG_SG_COL                = 32;
+    ST_A_DG_H_COL                 = 33;
+    ST_A_CA3_SLM_COL              = 34;
+    ST_A_CA3_SR_COL               = 35;
+    ST_A_CA3_SL_COL               = 36;
+    ST_A_CA3_SP_COL               = 37;
+    ST_A_CA3_SO_COL               = 38;
+    ST_A_CA2_SLM_COL              = 39;
+    ST_A_CA2_SR_COL               = 40;
+    ST_A_CA2_SP_COL               = 41;
+    ST_A_CA2_SO_COL               = 42;
+    ST_A_CA1_SLM_COL              = 43;
+    ST_A_CA1_SR_COL               = 44;
+    ST_A_CA1_SP_COL               = 45;
+    ST_A_CA1_SO_COL               = 46;
+    ST_A_SUB_SM_COL               = 47;
+    ST_A_SUB_SP_COL               = 48;
+    ST_A_SUB_PL_COL               = 49;
+    ST_A_EC_LI_COL                = 50;
+    ST_A_EC_LII_COL               = 51;
+    ST_A_EC_LIII_COL              = 52;
+    ST_A_EC_LIV_COL               = 53;
+    ST_A_EC_LV_COL                = 54;
+    ST_A_EC_LVI_COL               = 55;
+    
+    ST_D_DG_SMO_COL               = 56;
+    ST_D_DG_SMI_COL               = 57;
+    ST_D_DG_SG_COL                = 58;
+    ST_D_DG_H_COL                 = 59;
+    ST_D_CA3_SLM_COL              = 60;
+    ST_D_CA3_SR_COL               = 61;
+    ST_D_CA3_SL_COL               = 62;
+    ST_D_CA3_SP_COL               = 63;
+    ST_D_CA3_SO_COL               = 64;
+    ST_D_CA2_SLM_COL              = 65;
+    ST_D_CA2_SR_COL               = 66;
+    ST_D_CA2_SP_COL               = 67;
+    ST_D_CA2_SO_COL               = 68;
+    ST_D_CA1_SLM_COL              = 69;
+    ST_D_CA1_SR_COL               = 70;
+    ST_D_CA1_SP_COL               = 71;
+    ST_D_CA1_SO_COL               = 72;
+    ST_D_SUB_SM_COL               = 73;
+    ST_D_SUB_SP_COL               = 74;
+    ST_D_SUB_PL_COL               = 75;
+    ST_D_EC_LI_COL                = 76;
+    ST_D_EC_LII_COL               = 77;
+    ST_D_EC_LIII_COL              = 78;
+    ST_D_EC_LIV_COL               = 79;
+    ST_D_EC_LV_COL                = 80;
+    ST_D_EC_LVI_COL               = 81;
+    
+    SF_A_DG_SMO_COL               = 82;
+    SF_A_DG_SMI_COL               = 83;
+    SF_A_DG_SG_COL                = 84;
+    SF_A_DG_H_COL                 = 85;
+    SF_A_CA3_SLM_COL              = 86;
+    SF_A_CA3_SR_COL               = 87;
+    SF_A_CA3_SL_COL               = 88;
+    SF_A_CA3_SP_COL               = 89;
+    SF_A_CA3_SO_COL               = 90;
+    SF_A_CA2_SLM_COL              = 91;
+    SF_A_CA2_SR_COL               = 92;
+    SF_A_CA2_SP_COL               = 93;
+    SF_A_CA2_SO_COL               = 94;
+    SF_A_CA1_SLM_COL              = 95;
+    SF_A_CA1_SR_COL               = 96;
+    SF_A_CA1_SP_COL               = 97;
+    SF_A_CA1_SO_COL               = 98;
+    SF_A_SUB_SM_COL               = 99;
+    SF_A_SUB_SP_COL               = 100;
+    SF_A_SUB_PL_COL               = 101;
+    SF_A_EC_LI_COL                = 102;
+    SF_A_EC_LII_COL               = 103;
+    SF_A_EC_LIII_COL              = 104;
+    SF_A_EC_LIV_COL               = 105;
+    SF_A_EC_LV_COL                = 106;
+    SF_A_EC_LVI_COL               = 107;
+
+    SF_D_DG_SMO_COL               = 108;
+    SF_D_DG_SMI_COL               = 109;
+    SF_D_DG_SG_COL                = 110;
+    SF_D_DG_H_COL                 = 111;
+    SF_D_CA3_SLM_COL              = 112;
+    SF_D_CA3_SR_COL               = 113;
+    SF_D_CA3_SL_COL               = 114;
+    SF_D_CA3_SP_COL               = 115;
+    SF_D_CA3_SO_COL               = 116;
+    SF_D_CA2_SLM_COL              = 117;
+    SF_D_CA2_SR_COL               = 118;
+    SF_D_CA2_SP_COL               = 119;
+    SF_D_CA2_SO_COL               = 120;
+    SF_D_CA1_SLM_COL              = 121;
+    SF_D_CA1_SR_COL               = 122;
+    SF_D_CA1_SP_COL               = 123;
+    SF_D_CA1_SO_COL               = 124;
+    SF_D_SUB_SM_COL               = 125;
+    SF_D_SUB_SP_COL               = 126;
+    SF_D_SUB_PL_COL               = 127;
+    SF_D_EC_LI_COL                = 128;
+    SF_D_EC_LII_COL               = 129;
+    SF_D_EC_LIII_COL              = 130;
+    SF_D_EC_LIV_COL               = 131;
+    SF_D_EC_LV_COL                = 132;
+    SF_D_EC_LVI_COL               = 133;
+    
+    CCKPOS_OR_CB1RPOS_COL      = 134;
+    NNOSPOS_COL                = 135;
+    NPYPOS_COL                 = 136;
+    RLNPOS_COL                 = 137;
+    CRPOS_COL                  = 138;
+    VIPPOS_COL                 = 139;
+    SOMPOS_COL                 = 140;
+    
+    save('./lib/constants.mat');
+
+end % define_constants()

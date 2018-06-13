@@ -1,0 +1,176 @@
+function [CIJ numValidSwaps numInvalidSwaps] = makerandCIJ_dir_EI_swap(cellMtypes, tempAllD, CIJ, degPresCode)
+
+% inputs:
+%           allM - list & counts of 4 types of monomers
+%           allD - list & counts of 26 types of monomers
+%           CIJ - directed connected matrix
+%           degPresCode - degree preservation code:
+%                           1 = any swap is OK
+%                           2 = preserve sign of edge only
+%                           3 = preserve sign of edge & "to" node
+%                           4 = preserve degree dimer spectrum
+%                           5 = swap only LIKE dimers
+% output:
+%           CIJ = randomized directed connection matrix
+%
+% Generates a random directed binary connection matrix, with the correct
+% numbers of monomers and dimers randomly placed
+%
+% Olaf Sporns, Indiana University, 2007/2008
+% Christopher Rees, George Mason University, 2010
+
+tic
+
+load validSwapClassLib swapClasses monomers2dimers;
+
+maxPasses = 1;
+numValidSwaps = 0;
+numInvalidSwaps = 0;
+
+for passes = 1:maxPasses
+    for k=18:32
+        while (size(tempAllD{k},2) ~= 0 && tempAllD{k}(3,1) == 0)
+            validSwapClasses = swapClasses{k,degPresCode};
+            [validSwapFound tempAllD d1start d1end d2start d2end] = swapDimerEdges(k, tempAllD, validSwapClasses, CIJ, cellMtypes, monomers2dimers);
+            
+            if k<=16 && validSwapFound==1
+                CIJ(d1start,d1end) = 0;
+                CIJ(d2start,d2end) = 0;
+                CIJ(d1start,d2end) = cellMtypes(d1start,2);
+                CIJ(d2start,d1end) = cellMtypes(d2start,2);
+                numValidSwaps = numValidSwaps+1;
+
+            elseif k>16 && validSwapFound==1
+                CIJ(d1start,d1end) = 0;
+                CIJ(d1end,d1start) = 0;
+                CIJ(d2start,d2end) = 0;
+                CIJ(d2end,d2start) = 0;
+                CIJ(d1start,d2end) = cellMtypes(d1start,2);
+                CIJ(d2end,d1start) = cellMtypes(d2end,2);
+                CIJ(d2start,d1end) = cellMtypes(d2start,2);
+                CIJ(d1end,d2start) = cellMtypes(d1end,2);
+                numValidSwaps = numValidSwaps+1;
+                    
+            else
+                numInvalidSwaps = numInvalidSwaps+1;        
+            end
+                    
+        end
+    end
+    for clearIdx=1:32
+        tempAllD{clearIdx}(3,:)=0;
+    end
+end
+
+swap = toc
+
+end
+
+
+function [validSwapFound tempAllD d1start d1end d2start d2end] = swapDimerEdges(k, tempAllD, validSwapClasses, CIJ, cellMtypes, monomers2dimers)
+    maxAttempts = 100;
+    attempt = 0;
+  
+    d1start = tempAllD{k}(1,1);
+    d1end = tempAllD{k}(2,1);
+
+    randClassIndex = ceil(rand(1,1)*length(validSwapClasses));
+    while (size(tempAllD{validSwapClasses(randClassIndex)},2) == 0) && (attempt < maxAttempts)
+        attempt = attempt + 1;
+        randClassIndex = ceil(rand(1,1)*length(validSwapClasses));
+    end
+    
+    randPosIndex = ceil(rand(1,1)*size(tempAllD{validSwapClasses(randClassIndex)},2));
+    
+    d2start = tempAllD{validSwapClasses(randClassIndex)}(1,randPosIndex);
+    d2end = tempAllD{validSwapClasses(randClassIndex)}(2,randPosIndex);
+    
+    while (attempt < maxAttempts) && ((CIJ(d1start,d2end) ~= 0 || CIJ(d2end,d1start) ~= 0 || CIJ(d2start,d1end) ~= 0 || CIJ(d1end,d2start) ~= 0) ...
+            || (d2start == d1start || d2start == d1end) || (d2end == d1start || d2end == d1end))
+        
+        randClassIndex = ceil(rand(1,1)*length(validSwapClasses));
+        attempt = attempt + 1;
+        while (size(tempAllD{validSwapClasses(randClassIndex)},2) == 0) && (attempt < maxAttempts)
+            attempt = attempt + 1;
+            randClassIndex = ceil(rand(1,1)*length(validSwapClasses));
+        end
+        if attempt < maxAttempts
+            randPosIndex = ceil(rand(1,1)*size(tempAllD{validSwapClasses(randClassIndex)},2));
+            d2start = tempAllD{validSwapClasses(randClassIndex)}(1,randPosIndex);
+            d2end = tempAllD{validSwapClasses(randClassIndex)}(2,randPosIndex);            
+        end
+    end
+
+    if attempt == maxAttempts
+        validSwapFound = 0;
+        
+        tempAllD{k}(1,size(tempAllD{k},2)+1) = d1start;
+        tempAllD{k}(2,size(tempAllD{k},2)) = d1end;
+        tempAllD{k}(3,size(tempAllD{k},2)) = 1;
+        tempAllD{k}(:,1) = [];
+        
+        %validSwapFound
+        %tAD_k = tempAllD{k}
+        %pause
+    else
+        validSwapFound = 1;
+                
+        tempAllD{validSwapClasses(randClassIndex)}(:,randPosIndex) = []; %important to do this one first
+        tempAllD{k}(:,1) = [];
+        
+        d1startMtype = cellMtypes(d1start,1);
+        d1endMtype = cellMtypes(d1end,1);
+        d2startMtype = cellMtypes(d2start,1);
+        d2endMtype = cellMtypes(d2end,1);
+        if k<=16
+            backconn = 0;
+        else
+            backconn = 1;
+        end
+        
+        newD1_key = [d1startMtype d2endMtype backconn];
+        dNum1row = all(repmat(newD1_key,32,1)==monomers2dimers(:,1:3),2);
+        dNum1ID = monomers2dimers(dNum1row,4);        
+        
+        tempAllD{dNum1ID}(1,size(tempAllD{dNum1ID},2)+1) = d1start;
+        tempAllD{dNum1ID}(2,size(tempAllD{dNum1ID},2)) = d2end;
+        tempAllD{dNum1ID}(3,size(tempAllD{dNum1ID},2)) = 1;
+        
+        newD2_key = [d2startMtype d1endMtype backconn];
+        dNum2row = all(repmat(newD2_key,32,1)==monomers2dimers(:,1:3),2);
+        dNum2ID = monomers2dimers(dNum2row,4);
+
+        tempAllD{dNum2ID}(1,size(tempAllD{dNum2ID},2)+1) = d2start;
+        tempAllD{dNum2ID}(2,size(tempAllD{dNum2ID},2)) = d1end;
+        tempAllD{dNum2ID}(3,size(tempAllD{dNum2ID},2)) = 1;
+        
+        if (dNum1ID ~= k || dNum2ID ~)
+            validSwapFound
+            k
+            d1start
+            d1end
+            tAD_k = tempAllD{k}
+
+            validSwapClasses
+            randClassIndex
+            d2start
+            d2end
+            tAD_vSC = tempAllD{validSwapClasses(randClassIndex)}
+            pause
+
+            newD1_key
+            dNum1row
+            dNum1ID
+            tAD_1 = tempAllD{dNum1ID}
+            pause
+
+            newD2_key
+            dNum2row
+            dNum2ID
+            tAD_2 = tempAllD{dNum2ID}
+            pause
+        end
+        
+    end
+
+end
